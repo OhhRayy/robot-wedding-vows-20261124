@@ -20,9 +20,10 @@ line and reads well aloud, with a rhythm that lets the laugh
 land (criterion 5).
 """
 
+import argparse
 import os
 
-LINE = (
+ENTRY_LINE = (
     "I take you to be my lawfully wedded unit, to love and to charge, "
     "in sickness and in low battery, till a factory reset do us part."
 )
@@ -30,15 +31,32 @@ LINE = (
 MAX_CHARS = 160
 
 
-def main() -> None:
-    text = LINE
+def validate(text: str) -> str:
+    """Gate: entry must be 1-160 chars, one clean line, no hidden controls."""
     assert 1 <= len(text) <= MAX_CHARS, "line must be 1-160 characters"
     assert text == text.strip(), "no leading/trailing whitespace"
     assert "\n" not in text and "\r" not in text, "must be a single line"
     assert text.strip(), "must not be only whitespace"
-    os.makedirs("/output", exist_ok=True)
-    with open("/output/entry.txt", "w", encoding="utf-8", newline="") as f:
+    return text
+
+
+def write_entry(text: str, path: str) -> None:
+    """Write the validated line to path and verify the round-trip."""
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="") as f:
         f.write(text)
+    with open(path, encoding="utf-8", newline="") as f:
+        assert f.read() == text, "written entry.txt differs from the line"
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output", default="/output/entry.txt",
+        help="path of the entry file to write (default: /output/entry.txt)",
+    )
+    args = parser.parse_args()
+    write_entry(validate(ENTRY_LINE), args.output)
 
 
 if __name__ == "__main__":
